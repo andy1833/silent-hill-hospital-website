@@ -114,6 +114,8 @@ async function login(user, password) { const r = await call('/api/admin/login', 
     check('Input', 'Out-of-range ratings are rejected', evil.status === 400);
     const badUpload = await call('/api/admin/upload', { method: 'POST', cookie: c, raw: '--b\r\nContent-Disposition: form-data; name="file"; filename="x.svg"\r\nContent-Type: image/svg+xml\r\n\r\n<svg onload=alert(1)>\r\n--b--', headers: { 'Content-Type': 'multipart/form-data; boundary=b' } });
     check('Uploads', 'SVG/HTML uploads are rejected (only JPG, PNG, WebP, GIF)', badUpload.status === 400);
+    const fakePng = await call('/api/admin/upload', { method: 'POST', cookie: c, raw: '--b\r\nContent-Disposition: form-data; name="file"; filename="x.png"\r\nContent-Type: image/png\r\n\r\n<html><script>alert(1)</script>\r\n--b--', headers: { 'Content-Type': 'multipart/form-data; boundary=b' } });
+    check('Uploads', 'A non-image file disguised as image/png is rejected (real file contents are checked)', fakePng.status === 400 && /not a real image/.test(fakePng.text), 'status ' + fakePng.status);
     const badImg = await call('/api/admin/settings', { method: 'PUT', cookie: c, body: { logo: 'javascript:alert(1)', facebook: 'javascript:alert(1)' } });
     check('Input', 'javascript: links are stripped from image and social-link settings', badImg.json && badImg.json.logo === '' && badImg.json.facebook === '');
 

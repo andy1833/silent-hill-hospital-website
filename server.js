@@ -533,6 +533,14 @@ app.post('/api/admin/upload', requireAdmin, role(...CONTENT_ROLES), (req, res) =
   upload.single('file')(req, res, err => {
     if (err) return bad(res, err.code === 'LIMIT_FILE_SIZE' ? 'Image is too large (max 6 MB).' : 'Upload failed.');
     if (!req.file) return bad(res, 'Please choose a JPG, PNG, WebP or GIF image.');
+    // don't trust the browser's claimed type: check the file's real first bytes match an image format
+    const head = Buffer.alloc(12);
+    try { const fd = fs.openSync(req.file.path, 'r'); fs.readSync(fd, head, 0, 12, 0); fs.closeSync(fd); } catch { /* unreadable: rejected below */ }
+    const real = { '.jpg': head[0] === 0xFF && head[1] === 0xD8 && head[2] === 0xFF,
+      '.png': head.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])),
+      '.gif': /^GIF8[79]a$/.test(head.subarray(0, 6).toString('latin1')),
+      '.webp': head.subarray(0, 4).toString('latin1') === 'RIFF' && head.subarray(8, 12).toString('latin1') === 'WEBP' }[path.extname(req.file.filename)];
+    if (!real) { fs.unlink(req.file.path, () => {}); return bad(res, 'That file is not a real image.'); }
     res.json({ url: '/uploads/' + req.file.filename });
   });
 });
