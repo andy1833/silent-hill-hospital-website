@@ -1,0 +1,48 @@
+@page { size: A5 landscape; margin: 0; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+:root { --red: #c8102e; --deep: #6f0819; --soft: #fdecee; --ink: #2b1a1d; --muted: #6d5a5e; --head: 'Playfair Display', Georgia, serif; --body: 'Nunito Sans', system-ui, sans-serif; }
+body { margin: 0; background: #e9dfe0; font-family: var(--body); color: var(--ink); }
+.bar { display: flex; gap: 10px; justify-content: center; padding: 16px; flex-wrap: wrap; }
+.bar button, .bar a { font: 700 1rem var(--body); padding: 10px 22px; border-radius: 999px; border: 2px solid var(--red); background: var(--red); color: #fff; cursor: pointer; text-decoration: none; }
+.bar a { background: #fff; color: var(--red); }
+.err { max-width: 480px; margin: 60px auto; background: #fff; padding: 24px; border-radius: 14px; text-align: center; color: var(--deep); font-weight: 700; }
+
+.sheet { position: relative; width: 210mm; height: 148mm; margin: 0 auto 30px; background: #fff; overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, .25); page-break-after: avoid; }
+.frame { position: absolute; inset: 5mm; border: 1.2mm solid var(--red); border-radius: 5mm; }
+.frame::after { content: ''; position: absolute; inset: 1.6mm; border: .3mm solid #e9a5b0; border-radius: 3.4mm; }
+.wm { position: absolute; left: 50%; top: 52%; width: 150mm; transform: translate(-50%, -50%); opacity: .09; }
+.content { position: absolute; inset: 11mm 13mm; display: flex; flex-direction: column; }
+.hd { display: flex; justify-content: space-between; align-items: center; border-bottom: .5mm solid var(--red); padding-bottom: 3mm; }
+.hd img { height: 17mm; }
+.hd .kind { text-align: right; }
+.hd .kind b { display: block; font: 800 6.4mm var(--head); color: var(--red); letter-spacing: .05em; }
+.hd .kind span { font-size: 3.2mm; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; }
+.lbl { font-size: 3mm; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); font-weight: 800; }
+.main { flex: 1; display: grid; align-content: center; gap: 4mm; }
+.name { font: 700 9mm var(--head); color: var(--deep); border-bottom: .3mm dashed #c9a0a8; padding-bottom: 1mm; }
+.row3 { display: grid; grid-template-columns: 1.2fr .9fr 1.3fr; gap: 6mm; }
+.big { font: 800 7.4mm var(--head); color: var(--red); line-height: 1.1; }
+.val { font: 800 4.6mm var(--body); }
+.terms { font-size: 3mm; color: var(--muted); line-height: 1.35; }
+.ft { display: flex; justify-content: space-between; align-items: flex-end; gap: 8mm; border-top: .3mm solid #e9c3c9; padding-top: 2.6mm; font-size: 3mm; color: var(--muted); }
+.sign { width: 48mm; border-top: .3mm solid var(--ink); text-align: center; padding-top: 1mm; font-size: 2.8mm; }
+.code { white-space: nowrap; font: 800 4.6mm var(--head); letter-spacing: .12em; color: var(--red); background: var(--soft); padding: 1.6mm 4mm; border: .4mm dashed var(--red); border-radius: 2mm; display: inline-block; }
+
+/* ticket: main area + tear-off stub */
+.ticket .content { flex-direction: row; gap: 0; inset: 11mm 13mm; }
+.ticket .left { flex: 1; display: flex; flex-direction: column; padding-right: 6mm; }
+.ticket .stub { width: 48mm; border-left: .5mm dashed var(--red); padding-left: 5mm; display: flex; flex-direction: column; justify-content: center; gap: 3mm; text-align: center; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 3.5mm 6mm; }
+.status { display: inline-block; font-size: 3mm; font-weight: 800; padding: .6mm 3mm; border-radius: 999px; background: #fff1d6; color: #8a5a00; text-transform: uppercase; letter-spacing: .08em; }
+.status.confirmed, .status.completed { background: #e0f3e8; color: #156a3e; }
+.status.cancelled { background: #f4e0e3; color: #9b0c24; }
+
+@media print {
+  body { background: #fff; }
+  .bar { display: none; }
+  .sheet { margin: 0; box-shadow: none; }
+}
+
+/* A4 landscape voucher: the A5 artwork scaled up 1.414x */
+.sheet.a4 { width: 297mm; height: 210mm; }
+.sheet.a4 > .inner { position: absolute; left: 0; top: 0; width: 210mm; height: 148.5mm; transform: scale(1.41429); transform-origin: 0 0; }

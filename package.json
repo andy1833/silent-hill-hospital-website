@@ -1,0 +1,18 @@
+{
+  "name": "silent-hill-hospital-website",
+  "version": "1.0.0",
+  "description": "Silent Hill Hospital website with admin panel",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "pdfkit": "^0.20.2"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "private": true
+}

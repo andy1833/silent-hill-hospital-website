@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 112" role="img" aria-label="Silent Hill Hospital">
+  <g fill="none" stroke="#d3212d" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M28 66 L88 22 L112 40 L138 24 L204 66" stroke-width="5"/>
+    <path d="M62 44 L88 30 L104 42" stroke-width="3" opacity=".55"/>
+    <g stroke-width="3">
+      <circle cx="244" cy="30" r="8"/>
+      <path d="M244 12v6M244 42v6M226 30h6M256 30h6M231 17l4 4M253 39l4 4M257 17l-4 4M235 39l-4 4"/>
+    </g>
+  </g>
+  <text x="165" y="98" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="700" font-size="32" fill="#d3212d">Silent Hill Hospital</text>
+</svg>
