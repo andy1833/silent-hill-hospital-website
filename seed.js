@@ -8,6 +8,7 @@ function nextSaturday(weeksAhead = 0) {
 const settings = {
   name: 'Silent Hill Hospital',
   tagline: 'Caring for mothers, babies and families',
+  motto: 'For Uncompromised Quality Healthcare',
   level: 'Level 3 Health Facility',
   phone: '0700 000 000',
   whatsapp: '254711854476',
@@ -41,7 +42,21 @@ const settings = {
 
   catalogTitle: 'Our WhatsApp Catalog',
   catalogText: 'Browse our health packages, maternity essentials and baby-care products, then order or ask a question directly on WhatsApp.',
-  catalogUrl: ''
+  catalogUrl: '',
+
+  rightsIntro: 'Every person, patient or client, has a:',
+  patientRights: [
+    'Right to access health care',
+    'Right to receive emergency treatment in any health facility',
+    'Right to be informed all the provisions of one’s health insurance policy',
+    'Right to choose a health care provider',
+    'Right to quality health care',
+    'Right to refuse treatment',
+    'Right to confidentiality',
+    'Right to informed consent to treatment',
+    'Right to information',
+    'Right to be treated with respect and dignity'
+  ]
 };
 
 const services = [

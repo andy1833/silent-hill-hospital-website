@@ -82,6 +82,7 @@ function renderVoucher(stream, c, settings, logoFile) {
   doc.text(safe(String(settings.address ?? '').replace(/\s*\n\s*/g, ', ')), 60, 529, { width: 520, lineBreak: false, ellipsis: true });
   doc.lineWidth(0.8).strokeColor(INK).moveTo(610, 546).lineTo(790, 546).stroke();
   doc.font('Helvetica').fontSize(8).fillColor(GREY).text('Authorised by', 610, 551, { width: 180, align: 'center', lineBreak: false });
+  if (settings.motto) doc.font('Times-BoldItalic').fontSize(11).fillColor(RED).text(safe(settings.motto), 0, 560, { width: W, align: 'center', lineBreak: false });
   doc.end();
 }
 

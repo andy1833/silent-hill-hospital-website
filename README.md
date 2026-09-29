@@ -34,3 +34,12 @@ Health check: `/healthz`.
 
 ### Backups
 Everything lives in `db.json` (in the data folder) and the `uploads` folder. Download or snapshot them regularly.
+
+## Security and reports
+- Passwords are stored as salted scrypt hashes. Sessions are random 256-bit tokens in HttpOnly, SameSite=Strict (and Secure on HTTPS) cookies.
+- Roles: **reception** (requests only), **editor** (plus content and reports), **admin** (plus users).
+- Run the self-test: `node scripts/security-check.js https://your-site` (public checks; safe on the live site).
+  Full test on a throwaway local copy only: start the site with a temporary `DATA_DIR`, `UPLOAD_DIR`, `PORT=3006` and
+  `ADMIN_INITIAL_PASSWORD`, then `ADMIN_PASSWORD=... node scripts/security-check.js http://localhost:3006`.
+- Admin **Reports** shows page views, visitors, bookings and inquiries, with CSV downloads. Visits are counted without cookies
+  or stored IP addresses, and Do-Not-Track is honoured.

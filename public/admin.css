@@ -80,3 +80,10 @@ body.adm { background: #faf3f4; font-size: 16px; }
 .cb.staff { align-self: flex-end; align-items: flex-end; } .cb.staff span { background: var(--red); color: #fff; border-bottom-right-radius: 4px; }
 .cform { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); align-items: flex-end; }
 .cform textarea { min-height: 48px; height: 48px; }
+
+.bars { display: flex; align-items: flex-end; gap: 2px; height: 120px; border-bottom: 1px solid var(--line); margin-top: 8px; }
+.bars i { flex: 1; min-height: 2px; border-radius: 2px 2px 0 0; opacity: .9; }
+.bars i:hover { opacity: 1; outline: 1px solid #000; }
+.axis { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-top: 4px; }
+.ch-h { display: flex; justify-content: space-between; align-items: center; }
+.rt { width: 100%; border-collapse: collapse; } .rt td { padding: 6px 4px; border-bottom: 1px solid var(--line); } .rt td:last-child { text-align: right; font-weight: 800; }

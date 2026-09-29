@@ -342,3 +342,17 @@ a.card:hover .ico, .card:hover .ico { transform: rotate(-8deg) scale(1.12); back
 .ins .ins-logo img { height: auto; width: auto; max-height: 72px; max-width: 100%; object-fit: contain; }
 
 .ins-static { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+
+/* patients' rights + motto */
+.rights { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 16px; }
+.right { display: flex; gap: 16px; align-items: center; background: #fff; border: 1px solid var(--line); border-left: 6px solid var(--red); border-radius: 14px; padding: 16px 20px; box-shadow: var(--shadow); }
+.right .no { flex: none; width: 46px; height: 46px; border-radius: 50%; background: var(--red); color: #fff; font: 800 1.25rem var(--head); display: grid; place-items: center; }
+.right p { margin: 0; font-weight: 800; font-size: 1.05rem; color: var(--red-deep); }
+.motto-band { background: linear-gradient(90deg, var(--red), var(--red-dark)); color: #fff; text-align: center; font: italic 700 1.35rem var(--head); padding: 14px 18px; border-radius: 12px; margin-top: 22px; }
+.motto-line { font-family: var(--head); font-style: italic; font-size: 1.15rem; opacity: .95; margin: 0 0 10px; }
+@media print {
+  .topbar, header.nav, footer, .fab, .chat-fab, .fab-fb, .chatbox, .no-print, .skip { display: none !important; }
+  body { font-size: 14pt; } .page-head { padding: 20px 0 30px; } .right { break-inside: avoid; box-shadow: none; }
+  html.anim .reveal { opacity: 1 !important; transform: none !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

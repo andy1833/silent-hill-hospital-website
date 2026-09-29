@@ -10,7 +10,7 @@ const dl = document.getElementById('dl');
 if (dl) dl.href = '/api/voucher-pdf/' + encodeURIComponent(ref);
 
 const head = (S, title, sub) => `<div class="hd"><img src="${esc(S.logo || '/logo.svg')}" alt="${esc(S.name)}"><div class="kind"><b>${title}</b><span>${sub}</span></div></div>`;
-const foot = S => `📞 ${esc(S.phone)} · 💬 WhatsApp ${esc(S.whatsapp)} · ✉ ${esc(S.email)}<br>${esc(S.address).replace(/\n/g, ', ')}`;
+const foot = S => `${S.motto ? `<i>${esc(S.motto)}</i><br>` : ''}📞 ${esc(S.phone)} · 💬 WhatsApp ${esc(S.whatsapp)} · ✉ ${esc(S.email)}<br>${esc(S.address).replace(/\n/g, ', ')}`;
 
 const money = (n, cur) => `${cur || 'KES'} ${Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 function voucher(S, c) {

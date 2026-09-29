@@ -108,13 +108,14 @@ const SUBMISSIONS = {
 
 /* ---------- settings ---------- */
 const SETTINGS_SCHEMA = {
-  name: 's', tagline: 's', level: 's', phone: 's', whatsapp: 'wa', email: 's', address: 't', hours: 't',
+  name: 's', tagline: 's', motto: 's', level: 's', phone: 's', whatsapp: 'wa', email: 's', address: 't', hours: 't',
   facebook: 'url', instagram: 'url', tiktok: 'url', logo: 'img',
   heroTitle: 's', heroText: 't', aboutText: 't',
   maternityTitle: 's', maternityText: 't', maternityHighlights: 'a',
   clinicTitle: 's', clinicDay: 's', clinicTime: 's', clinicText: 't', clinicCovers: 'a', clinicFee: 's',
   ambulanceTitle: 's', ambulancePhone: 's', ambulanceText: 't', ambulanceFeatures: 'a',
-  catalogTitle: 's', catalogText: 't', catalogUrl: 'url'
+  catalogTitle: 's', catalogText: 't', catalogUrl: 'url',
+  rightsIntro: 's', patientRights: 'a'
 };
 
 /* ---------- database (single JSON file) ---------- */
@@ -132,6 +133,10 @@ function save() {
   fs.writeFileSync(tmp, JSON.stringify(db, null, 2));
   fs.renameSync(tmp, DB_FILE);
 }
+let saveTimer = null;
+const saveSoon = () => { if (saveTimer) return; saveTimer = setTimeout(() => { saveTimer = null; save(); }, 5000); saveTimer.unref?.(); };
+process.on('SIGTERM', () => { if (saveTimer) { clearTimeout(saveTimer); save(); } process.exit(0); });
+
 function load() {
   if (fs.existsSync(DB_FILE)) {
     db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
@@ -143,6 +148,7 @@ function load() {
   }
   if (!db.insurers) db.insurers = seed.insurers.map(x => ({ id: uid(), created: new Date().toISOString(), ...x }));
   for (const name of [...Object.keys(COLLECTIONS), ...Object.keys(SUBMISSIONS), 'chats']) db[name] ||= [];
+  db.analytics ||= { salt: crypto.randomBytes(16).toString('hex'), days: {} };
   if (db.settings.whatsapp === '254700000000') delete db.settings.whatsapp; // old placeholder → real number from seed
   db.settings = clean(SETTINGS_SCHEMA, { ...seed.settings, ...db.settings });
   // staff accounts (older installs had a single db.admin: migrate it)
@@ -293,6 +299,28 @@ app.post('/api/submit/:col', wrap((req, res) => {
   res.json({ ok: true, message: c.ok, code: extra.code, ref: extra.ref });
 }));
 
+/* ----- visit counter: anonymous daily totals only ----- */
+const BOT = /bot|crawl|spider|slurp|headless|lighthouse|preview|monitor|uptime|curl|wget|python|axios|node-fetch|go-http/i;
+const PAGES = new Set(['', 'maternity', 'services', 'service', 'clinic', 'events', 'gallery', 'blog', 'ambulance', 'catalog', 'book', 'contact', 'insurance', 'patient-rights']);
+app.post('/api/track', (req, res) => {
+  res.status(204).end();
+  try {
+    const ua = String(req.headers['user-agent'] || '');
+    if (req.headers.dnt === '1' || req.headers['sec-gpc'] === '1' || !ua || BOT.test(ua) || limited(req, 'track', 300, 600000)) return;
+    const seg = String(req.body?.path ?? '/').split('?')[0].split('/')[1] || '';
+    const page = '/' + (PAGES.has(seg) ? seg : 'other');
+    const day = today(), days = db.analytics.days;
+    const d = days[day] ||= { views: 0, uniques: 0, pages: {}, u: {} };
+    d.views++; d.pages[page] = (d.pages[page] || 0) + 1;
+    // a one-way daily hash lets us count unique visitors without storing IP addresses
+    const h = crypto.createHash('sha256').update(db.analytics.salt + day + req.ip + ua).digest('hex').slice(0, 12);
+    if (!d.u[h] && d.uniques < 50000) { d.u[h] = 1; d.uniques++; }
+    const keys = Object.keys(days).sort();
+    while (keys.length > 400) delete days[keys.shift()];
+    saveSoon();
+  } catch (e) { console.error('track', e.message); }
+});
+
 /* ----- live chat (visitor side; the visitor's token is the secret) ----- */
 const chatMsgs = c => c.messages.map(({ from, text, at, by }) => ({ from, text, at, by }));
 app.post('/api/chat/send', wrap((req, res) => {
@@ -398,6 +426,49 @@ app.delete('/api/admin/chats/:id', requireAdmin, role(...CONTENT_ROLES), wrap((r
   db.chats.splice(i, 1); save(); res.json({ ok: true });
 }));
 
+/* ----- reports (admin/editor) ----- */
+const dayList = n => { const out = [], t = new Date(); for (let i = n - 1; i >= 0; i--) { const d = new Date(t); d.setUTCDate(d.getUTCDate() - i); out.push(d.toISOString().slice(0, 10)); } return out; };
+app.get('/api/admin/reports', requireAdmin, role(...CONTENT_ROLES), (req, res) => {
+  const n = Math.min(365, Math.max(1, parseInt(req.query.days) || 30)), days = dayList(n), from = days[0];
+  const inRange = r => String(r.created || '').slice(0, 10) >= from;
+  const bk = db.bookings.filter(inRange), iq = db.inquiries.filter(inRange), fb = db.feedback.filter(inRange);
+  const count = (arr, f) => { const m = {}; for (const x of arr) { const k = f(x) || 'Unknown'; m[k] = (m[k] || 0) + 1; } return Object.entries(m).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count })); };
+  const perDay = arr => { const m = {}; for (const x of arr) { const d = String(x.created).slice(0, 10); m[d] = (m[d] || 0) + 1; } return m; };
+  const bd = perDay(bk), qd = perDay(iq), an = db.analytics.days;
+  const series = days.map(d => ({ date: d, views: an[d]?.views || 0, visitors: an[d]?.uniques || 0, bookings: bd[d] || 0, inquiries: qd[d] || 0 }));
+  const pages = {};
+  for (const d of days) for (const [p, c] of Object.entries(an[d]?.pages || {})) pages[p] = (pages[p] || 0) + c;
+  const sum = k => series.reduce((t, x) => t + x[k], 0);
+  res.json({
+    days: n, from, series,
+    totals: {
+      views: sum('views'), visitors: sum('visitors'), bookings: bk.length, inquiries: iq.length, answered: iq.filter(x => x.status === 'answered').length,
+      feedback: fb.length, avgRating: fb.length ? +(fb.reduce((t, x) => t + x.rating, 0) / fb.length).toFixed(1) : null,
+      claims: db.claims.filter(inRange).length, registrations: db.registrations.filter(inRange).length, chats: db.chats.filter(inRange).length
+    },
+    topPages: Object.entries(pages).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count })),
+    bookingsByStatus: count(bk, x => x.status), bookingsByService: count(bk, x => x.service).slice(0, 8), inquiriesByStatus: count(iq, x => x.status),
+    allTime: { bookings: db.bookings.length, inquiries: db.inquiries.length, firstVisitDay: Object.keys(an).sort()[0] || null }
+  });
+});
+
+const EXPORTS = {
+  bookings: ['created', 'ref', 'name', 'phone', 'email', 'service', 'date', 'time', 'status', 'notes'],
+  inquiries: ['created', 'name', 'phone', 'email', 'message', 'status', 'reply'],
+  feedback: ['created', 'name', 'rating', 'message', 'approved'],
+  registrations: ['created', 'eventTitle', 'name', 'phone', 'email', 'guests', 'status'],
+  claims: ['created', 'code', 'voucherTitle', 'name', 'phone', 'status']
+};
+const csvCell = v => { let t = String(v ?? '').replace(/\r?\n/g, ' '); if (/^[=+\-@\t]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; }; // quote, and defuse spreadsheet formulas
+app.get('/api/admin/export/:col', requireAdmin, role(...CONTENT_ROLES), (req, res) => {
+  const cols = EXPORTS[req.params.col];
+  if (!cols) return bad(res, 'Not found', 404);
+  const from = req.query.days ? dayList(Math.min(365, Math.max(1, parseInt(req.query.days) || 30)))[0] : '';
+  const rows = db[req.params.col].filter(r => !from || String(r.created).slice(0, 10) >= from).sort((a, b) => b.created.localeCompare(a.created));
+  const csv = '\ufeff' + [cols.join(','), ...rows.map(r => cols.map(c => csvCell(r[c])).join(','))].join('\r\n');
+  res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${req.params.col}-${today()}.csv"`, 'Cache-Control': 'no-store' }).send(csv);
+});
+
 /* ----- staff accounts (admin only) ----- */
 const activeAdmins = () => db.users.filter(u => u.role === 'admin' && u.active);
 const ROLES = ['admin', 'editor', 'reception'];
@@ -445,7 +516,8 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
     feedback: db.feedback.filter(x => !x.approved).length,
     registrations: db.registrations.filter(x => x.status === 'registered').length,
     claims: db.claims.filter(x => x.status === 'issued').length,
-    chats: db.chats.filter(x => x.unread > 0).length
+    chats: db.chats.filter(x => x.unread > 0).length,
+    visitsToday: db.analytics.days[today()]?.views || 0
   });
 });
 

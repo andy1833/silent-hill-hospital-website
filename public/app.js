@@ -28,7 +28,7 @@ const pic = (src, alt = '') => src ? `<img class="pic" src="${esc(src)}" alt="${
 
 /* ---------- shell ---------- */
 const NAV = [['#/', 'Home'], ['#/maternity', 'Maternity', 'hl'], ['#/services', 'Services'], ['#/clinic', 'Baby Clinic'], ['#/events', 'Events'], ['#/blog', 'Health Blog']];
-const MORE = [['#/insurance', 'Insurance & SHA'], ['#/ambulance', 'Ambulance'], ['#/catalog', 'WhatsApp Catalog'], ['#/gallery', 'Gallery'], ['#/contact', 'Contact & Feedback']];
+const MORE = [['#/patient-rights', 'Patients’ Rights'], ['#/insurance', 'Insurance & SHA'], ['#/ambulance', 'Ambulance'], ['#/catalog', 'WhatsApp Catalog'], ['#/gallery', 'Gallery'], ['#/contact', 'Contact & Feedback']];
 
 function shell() {
   document.title = `${S.name} | Maternity, Baby Clinic & ${S.level}`;
@@ -44,7 +44,7 @@ function shell() {
   $('#fab').href = wa();
   $('#footer').innerHTML = `
     <div class="cols">
-      <div><img src="${esc(S.logo || '/logo.svg')}" alt="${esc(S.name)}" style="height:56px;background:#fff;border-radius:12px;padding:6px 10px;margin-bottom:12px"><p>${esc(S.tagline)}. ${esc(S.level)}.</p>${accredited().length ? '<a href="#/insurance" class="pill accredited" style="text-decoration:none">✓ SHA accredited</a>' : ''}</div>
+      <div><img src="${esc(S.logo || '/logo.svg')}" alt="${esc(S.name)}" style="height:56px;background:#fff;border-radius:12px;padding:6px 10px;margin-bottom:12px"><p><i>${esc(S.motto || S.tagline)}</i><br>${esc(S.level)}</p>${accredited().length ? '<a href="#/insurance" class="pill accredited" style="text-decoration:none">✓ SHA accredited</a>' : ''}</div>
       <div><h4>Explore</h4><ul>${[...NAV, ...MORE].slice(1).map(([h, l]) => `<li><a href="${h}">${l}</a></li>`).join('')}</ul></div>
       <div><h4>Hours</h4><p>${lines(S.hours)}</p></div>
       <div><h4>Reach us</h4><ul>
@@ -163,7 +163,7 @@ pages.home = async () => {
   const journeySteps = (mat[0]?.steps || []).slice(0, 5);
   return `
   <section class="hero"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span><svg class="ecg" viewBox="0 0 1200 70" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40 H360 L390 40 L410 8 L440 64 L466 22 L484 40 H760 L790 40 L810 8 L840 64 L866 22 L884 40 H1200"/></svg><div class="wrap">
-    <div><span class="badge">${esc(S.level)} · Maternity care</span>${accredited().length ? ' <span class="badge sha-chip">✓ SHA Accredited</span>' : ''}<h1>${esc(S.heroTitle)}</h1><p class="lead">${esc(S.heroText)}</p>
+    <div><span class="badge">${esc(S.level)} · Maternity care</span>${accredited().length ? ' <span class="badge sha-chip">✓ SHA Accredited</span>' : ''}<h1>${esc(S.heroTitle)}</h1><p class="lead">${esc(S.heroText)}</p>${S.motto ? `<p class="motto-line">“${esc(S.motto)}”</p>` : ''}
       <div class="cta"><a class="btn white pulse" href="#/book">Book a maternity visit</a><a class="btn outline-white" href="${wa('Hello, I would like to book a maternity visit.')}" target="_blank" rel="noopener">💬 Chat on WhatsApp</a></div>${accredited().length ? `<a class="sha-hero" href="#/insurance"><img src="${esc(accredited()[0].logo || '/img/sha-logo.jpg')}" alt="Social Health Authority (SHA)"><span><b>✓ SHA Accredited</b>We accept Social Health Authority cover</span></a>` : ''}</div>
     <div class="glass"><h3>${esc(S.maternityTitle)}</h3>${list(S.maternityHighlights)}</div>
   </div></section>
@@ -296,6 +296,15 @@ pages.insurance = async () => {
     <p style="text-align:center;margin-top:26px"><a class="btn wa" href="${wa('Hello, I would like to ask about insurance / SHA cover.')}" target="_blank" rel="noopener">💬 Ask about insurance</a> <a class="btn ghost" href="#/book">Book an appointment</a></p></div></section>`;
 };
 
+pages.rights = async () => `${pageHead('Patients’ Rights', S.rightsIntro || 'Every person, patient or client, has a:')}
+  <section class="block"><div class="wrap">
+    <div class="rights">${(S.patientRights || []).map((r, i) => `<div class="right"><span class="no">${i + 1}</span><p>${esc(r)}</p></div>`).join('')}</div>
+    ${S.motto ? `<div class="motto-band">${esc(S.motto)}</div>` : ''}
+    <div class="no-print" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:26px">
+      <button class="btn" data-act="print">🖨 Print this page</button><a class="btn ghost" href="#/contact">Give feedback or raise a concern</a><a class="btn ghost" href="#/book">Book an appointment</a></div>
+    <p class="meta no-print" style="text-align:center;margin-top:18px">These rights apply to every patient and client of ${esc(S.name)}. If you feel a right has not been respected, please tell our reception or use the feedback form.</p>
+  </div></section>`;
+
 pages.ambulance = async () => `${pageHead(S.ambulanceTitle, 'Fast, safe transport, 24 hours a day.')}
   <section class="block"><div class="wrap split" style="align-items:start"><div><h2>When to call</h2><p>${esc(S.ambulanceText)}</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin:18px 0"><a class="btn" style="font-size:1.15rem" href="${tel(S.ambulancePhone)}">🚑 Call ${esc(S.ambulancePhone)}</a><a class="btn wa" href="${wa('EMERGENCY: I need an ambulance. My location is: ')}" target="_blank" rel="noopener">💬 WhatsApp location</a></div>
@@ -349,6 +358,11 @@ pages.contact = async () => {
 
 pages.notfound = async () => `${pageHead('Page not found', 'That page does not exist.')}<section class="block"><div class="wrap" style="text-align:center"><a class="btn" href="#/">Go home</a></div></section>`;
 
+/* ---------- anonymous visit counter (no cookies; the server keeps daily totals only) ---------- */
+function track(path) {
+  try { fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }), keepalive: true }).catch(() => {}); } catch { /* ignore */ }
+}
+
 /* ---------- scroll animation ---------- */
 const REVEAL = '.sec-head, .card, .panel, .voucher, .sha-badge, .marquee, .strip, .journey li, .gallery figure, .slider, .split > div, .filters, .empty, .prose, .msg';
 let revealObs;
@@ -380,7 +394,7 @@ const routes = [
   [/^\/?$/, () => pages.home()], [/^\/maternity$/, () => pages.maternity()], [/^\/services$/, () => pages.services()],
   [/^\/service\/(\w+)$/, id => pages.service(id)], [/^\/clinic$/, () => pages.clinic()], [/^\/events$/, () => pages.events()],
   [/^\/gallery$/, () => pages.gallery()], [/^\/blog$/, () => pages.blog()], [/^\/blog\/(\w+)$/, id => pages.post(id)],
-  [/^\/insurance$/, () => pages.insurance()], [/^\/ambulance$/, () => pages.ambulance()], [/^\/catalog$/, () => pages.catalog()], [/^\/book(?:\/(\w+))?$/, id => pages.book(id)],
+  [/^\/patient-rights$/, () => pages.rights()], [/^\/insurance$/, () => pages.insurance()], [/^\/ambulance$/, () => pages.ambulance()], [/^\/catalog$/, () => pages.catalog()], [/^\/book(?:\/(\w+))?$/, id => pages.book(id)],
   [/^\/contact$/, () => pages.contact()]
 ];
 async function route() {
@@ -395,6 +409,7 @@ async function route() {
     app.innerHTML = html ?? await pages.notfound();
     startSliders();
     initReveal();
+    track(path);
   } catch (e) {
     app.innerHTML = `<div class="wrap"><br><div class="msg err">Could not load this page. ${esc(e.message)}</div></div>`;
   }
@@ -412,6 +427,7 @@ document.addEventListener('click', async e => {
   const act = el.dataset.act;
   if (act === 'menu') { const m = $('#menu'); const o = m.classList.toggle('open'); el.setAttribute('aria-expanded', o); }
   else if (act === 'close') dlg.close();
+  else if (act === 'print') window.print();
   else if (act === 'chat') chatOpen();
   else if (act === 'chat-close') chatClose();
   else if (act === 'slide') slide(el.closest('[data-slider]').querySelector('.track'), Number(el.dataset.d));

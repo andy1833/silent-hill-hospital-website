@@ -95,7 +95,7 @@ const CRUD = {
 const SETTINGS = {
   site: {
     label: 'Site & contact', fields: [
-      { k: 'name', l: 'Hospital name', t: 'text' }, { k: 'tagline', l: 'Tagline', t: 'text' }, { k: 'level', l: 'Facility level label', t: 'text' },
+      { k: 'name', l: 'Hospital name', t: 'text' }, { k: 'tagline', l: 'Tagline', t: 'text' }, { k: 'motto', l: 'Motto', t: 'text', h: 'Shown on the home page, footer, tickets and vouchers.' }, { k: 'level', l: 'Facility level label', t: 'text' },
       { k: 'phone', l: 'Main phone', t: 'text' }, { k: 'whatsapp', l: 'WhatsApp number', t: 'text', h: 'Used for every “Chat on WhatsApp” button. You can type 0711854476, it is saved as 254711854476.' },
       { k: 'email', l: 'Email', t: 'text' }, { k: 'address', l: 'Address', t: 'textarea' }, { k: 'hours', l: 'Opening hours', t: 'textarea', h: 'One line per row.' },
       { k: 'facebook', l: 'Facebook page link', t: 'text', h: 'Paste the full link to your page. Leave empty to hide the icon.' },
@@ -129,6 +129,12 @@ const SETTINGS = {
       { k: 'catalogUrl', l: 'Link to your WhatsApp Business catalog', t: 'text', h: 'In WhatsApp Business: Catalog → Share → Copy link. Optional.' }
     ]
   }
+};
+SETTINGS.rights = {
+  label: 'Patients’ rights', fields: [
+    { k: 'rightsIntro', l: 'Introduction line', t: 'text' },
+    { k: 'patientRights', l: 'The rights', t: 'lines', h: 'One right per line, in order. They are numbered automatically on the public Patients’ Rights page.' }
+  ]
 };
 const stepsToText = a => (a || []).map(s => s.title + (s.text ? ' | ' + s.text : '')).join('\n');
 const textToSteps = t => t.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const i = l.indexOf('|'); return i < 0 ? { title: l, text: '' } : { title: l.slice(0, i).trim(), text: l.slice(i + 1).trim() }; });
@@ -174,10 +180,10 @@ document.addEventListener('click', e => {
 
 /* ---------- layout ---------- */
 const NAVS = [
-  ['dashboard', 'Dashboard'],
+  ['dashboard', 'Dashboard'], ['reports', 'Reports'],
   ['h', 'Requests'], ['chats', 'Live chat'], ['bookings', 'Bookings'], ['inquiries', 'Inquiries'], ['feedback', 'Customer feedback'], ['registrations', 'Event registrations'], ['claims', 'Voucher claims'],
   ['h', 'Content'], ['services', 'Services'], ['blogs', 'Blog posts'], ['events', 'Events'], ['vouchers', 'Vouchers'], ['insurers', 'Insurance partners'], ['gallery', 'Gallery'], ['catalog', 'WhatsApp catalog'],
-  ['h', 'Pages & settings'], ['site', 'Site & contact'], ['maternity', 'Maternity page'], ['clinic', 'Baby clinic'], ['ambulance', 'Ambulance'], ['catalogpage', 'Catalog page'],
+  ['h', 'Pages & settings'], ['site', 'Site & contact'], ['maternity', 'Maternity page'], ['clinic', 'Baby clinic'], ['ambulance', 'Ambulance'], ['catalogpage', 'Catalog page'], ['rights', 'Patients’ rights'],
   ['h', 'Account'], ['users', 'Users & roles'], ['account', 'My password']
 ];
 const ROLE_LABEL = { admin: 'Administrator', editor: 'Editor', reception: 'Reception' };
@@ -223,6 +229,7 @@ const go = guard(async id => {
   if (CRUD[id]) return crudList(m, id);
   if (SETTINGS[id]) return settingsForm(m, id);
   if (INBOX[id]) return inbox(m, id);
+  if (id === 'reports') return reportsPage(m);
   if (id === 'chats') return chatPage(m);
   if (id === 'users') return usersPage(m);
   if (id === 'account') return account(m);
@@ -231,7 +238,7 @@ const go = guard(async id => {
 
 /* ---------- dashboard ---------- */
 function dashboard(m) {
-  const T = [['chats', 'Unread chats', 'chats'], ['bookings', 'Pending bookings', 'bookings'], ['inquiries', 'New inquiries', 'inquiries'], ['feedback', 'Feedback to review', 'feedback'], ['registrations', 'Event registrations', 'registrations'], ['claims', 'Vouchers issued', 'claims']];
+  const T = [...(allowed('reports') ? [['visitsToday', 'Page views today', 'reports']] : []), ['chats', 'Unread chats', 'chats'], ['bookings', 'Pending bookings', 'bookings'], ['inquiries', 'New inquiries', 'inquiries'], ['feedback', 'Feedback to review', 'feedback'], ['registrations', 'Event registrations', 'registrations'], ['claims', 'Vouchers issued', 'claims']];
   m.innerHTML = `<div class="top"><h1>Welcome, ${esc(ME.name.split(' ')[0])} 👋</h1><div class="acts"><a class="btn ghost small" href="/" target="_blank">View website ↗</a></div></div>
   <div class="stats">${T.map(([k, l, g]) => `<button class="stat" data-goto="${g}"><b>${STATS[k] || 0}</b><span>${l}</span></button>`).join('')}</div>
   <div class="box2"><h3>Quick actions</h3><div class="acts" style="display:flex;gap:10px;flex-wrap:wrap">
@@ -387,6 +394,36 @@ function account(m) {
     <div><button class="btn">Change password</button></div></form>`;
   $('#pf').onsubmit = guard(async e => { e.preventDefault(); await api('/api/admin/password', 'POST', Object.fromEntries(new FormData(e.target))); e.target.reset(); toast('Password changed'); });
 }
+
+/* ---------- reports: visits, bookings, inquiries ---------- */
+const reportsPage = guard(async (m, days = 30) => {
+  const r = await api('/api/admin/reports?days=' + days), t = r.totals;
+  const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '–';
+  const card = (n, l, sub = '') => `<div class="stat" style="cursor:default"><b>${n}</b><span>${l}</span>${sub ? `<small class="hint" style="display:block">${sub}</small>` : ''}</div>`;
+  const chart = (key, label, color) => {
+    const total = r.series.reduce((a, x) => a + x[key], 0), max = Math.max(1, ...r.series.map(x => x[key]));
+    return `<div class="box2"><div class="ch-h"><b>${label}</b><span class="hint">total ${total}</span></div>
+      <div class="bars">${r.series.map(x => `<i style="height:${Math.round(x[key] / max * 100)}%;background:${color}" title="${x.date}: ${x[key]}"></i>`).join('')}</div>
+      <div class="axis"><span>${r.series[0].date}</span><span>${r.series[r.series.length - 1].date}</span></div></div>`;
+  };
+  const table = (title, rows, label = 'Count') => `<div class="box2"><h3 style="font-size:1.05rem">${title}</h3>${rows.length ? `<table class="rt"><tbody>${rows.map(x => `<tr><td>${esc(x.name)}</td><td>${x.count}</td></tr>`).join('')}</tbody></table>` : '<p class="hint">No data in this period yet.</p>'}</div>`;
+  m.innerHTML = `<div class="top"><h1>Reports</h1><div class="acts">${[7, 30, 90, 365].map(d => `<button class="chip ${d === days ? 'on' : ''}" data-days="${d}">${d === 365 ? '1 year' : 'Last ' + d + ' days'}</button>`).join('')}</div></div>
+    <div class="stats">
+      ${card(t.views, 'Page views', 'visits to the public site')}
+      ${card(t.visitors, 'Daily unique visitors', 'summed per day; no cookies or IPs stored')}
+      ${card(t.bookings, 'Bookings', t.visitors ? pct(t.bookings, t.visitors) + ' of visitors' : '')}
+      ${card(t.inquiries, 'Inquiries', t.inquiries ? pct(t.answered, t.inquiries) + ' answered' : '')}
+      ${card(t.avgRating ?? '–', 'Average rating', t.feedback + ' review' + (t.feedback === 1 ? '' : 's'))}
+      ${card(t.claims + ' / ' + t.registrations, 'Vouchers claimed / event sign-ups')}
+    </div>
+    ${r.allTime.firstVisitDay ? `<p class="hint">Visit counting started on ${r.allTime.firstVisitDay}. Visitors with “Do Not Track” switched on, and search-engine robots, are not counted.</p>` : '<p class="hint">Visit counting has just started, so numbers will build up from today.</p>'}
+    <div class="grid g2">${chart('views', 'Page views per day', '#c8102e')}${chart('bookings', 'Bookings per day', '#1d7a4a')}${chart('inquiries', 'Inquiries per day', '#c48a00')}${chart('visitors', 'Unique visitors per day', '#6f0819')}</div>
+    <div class="grid g2">${table('Most viewed pages', r.topPages)}${table('Bookings by service', r.bookingsByService)}${table('Bookings by status', r.bookingsByStatus)}${table('Inquiries by status', r.inquiriesByStatus)}</div>
+    <div class="box2"><h3 style="font-size:1.05rem">Download reports (CSV, opens in Excel)</h3><div class="acts" style="display:flex;gap:10px;flex-wrap:wrap">
+      ${['bookings', 'inquiries', 'feedback', 'registrations', 'claims'].map(c => `<a class="btn ghost small" href="/api/admin/export/${c}?days=${days}">⬇ ${c[0].toUpperCase() + c.slice(1)}</a>`).join('')}</div>
+      <p class="hint">Each file covers the selected period and contains patient details, so keep it private.</p></div>`;
+  m.querySelector('.acts').onclick = e => { const b = e.target.closest('[data-days]'); if (b) reportsPage(m, Number(b.dataset.days)); };
+});
 
 /* ---------- live chat ---------- */
 let chatTimer = null;
